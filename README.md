@@ -1,10 +1,23 @@
 # easymq
 An stupidly easy wrapper over the PIKA amqp package.
 
-# Send a message 
+## Send a message 
 
 ```python
-mq = EasyMQ(queueName,exchangeName)
-mq.ADD_OR_GET(inputDict)
-```
+val = dict()
+val["test"] = "value"    
+mq = EasyMQ("testq1","testex1")
+mq.ADD_OR_GET(val)
+# Only dict input allowed
+```    
+
+
+
+## Get a message 
+
+```python
+mq = EasyMQ("testq1","testex1")
+dict_from_mq = mq.ADD_OR_GET()
+#returns None if queue is empty
+ ```
 
