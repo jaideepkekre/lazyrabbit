@@ -20,6 +20,7 @@ class EasyMQ(object):
         self.log_level = log_level
         if send:
             self.SEND_CHANNEL = self._setup_connection()
+            self.SEND_CHANNEL.confirm_delivery()            
         if get : 
             self.GET_CHANNEL,_= self._create_default_channel()
         
@@ -105,15 +106,16 @@ class EasyMQ(object):
                 "MESSAGE_DICT cannot be None if in send mode")
             raise ValueError  
 
+
        
 
         self.SEND_CHANNEL.publish(exchange=self.EXCHANGE, routing_key=self.QUEUE,
-                        body=json.dumps(MESSAGE_DICT))       
+                        body=json.dumps(MESSAGE_DICT),mandatory=True)       
 
         return True
 
 
-    def ADD_OR_GET(self,MESSAGE_DICT=None, swallow_errors=False):
+    def ADD_OR_GET(self,MESSAGE_DICT=None):
         """
         SEND/GET MESSAGE TO/FROM A EXCHANGE/QUEUE VIA CHANNEL, 
         IF IN SEND , ONLY DICTS ACCEPTED,
@@ -130,10 +132,7 @@ class EasyMQ(object):
                 return self._GETMSG()
 
         except Exception:
-            if not swallow_errors:
-                raise
-            else:
-                return False
+            raise
 
 
 def tester():
@@ -141,8 +140,9 @@ def tester():
     val = dict()
     val["test"] = "value"    
     mq = EasyMQ("testq1","testex1")
-    mq.ADD_OR_GET(val)
-    print (mq.ADD_OR_GET())
+    while True:
+        mq.ADD_OR_GET(val)
+        #print (mq.ADD_OR_GET())
     
 
 
