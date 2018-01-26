@@ -59,6 +59,9 @@ class EasyMQ(object):
 
 
     def _GETMSG(self):
+        """
+        GETS A MESSAGE FROM QUEUE IN DICT FORM
+        """
         logging.basicConfig(level=self.log_level)
         logger = logging.getLogger("_ADDMSG")
 
@@ -77,7 +80,7 @@ class EasyMQ(object):
             self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
         else:
             return None
-        return body
+        return json.loads(body)
 
 
     def _ADDMSG(self,MESSAGE_DICT):
@@ -87,7 +90,7 @@ class EasyMQ(object):
         logging.basicConfig(level=self.log_level)
         logger = logging.getLogger("_ADDMSG")
 
-        if not isinstance(MESSAGE_DICT, types.DictType):
+        if not type(MESSAGE_DICT) == type(dict()):
             logger.error("MESSAGE_DICT should be of type dict not :" +
                          str(type(MESSAGE_DICT)))
             raise TypeError
@@ -136,13 +139,10 @@ class EasyMQ(object):
 def tester():
 
     val = dict()
-    val["test"] = "value"
-
-    # ADD_OR_GET("q2", val)
-    # print ADD_OR_GET("q2")
+    val["test"] = "value"    
     mq = EasyMQ("testq1","testex1")
     mq.ADD_OR_GET(val)
-    print mq.ADD_OR_GET()
+    print (mq.ADD_OR_GET())
     
 
 
