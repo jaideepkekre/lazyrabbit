@@ -1,5 +1,5 @@
 # easymq
-An stupidly easy wrapper over the PIKA amqp package.
+An stupidly easy wrapper over the Pika amqp package for RabbitMQ.
 
 ## Send a message 
 
