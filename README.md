@@ -1,5 +1,7 @@
-# LazyRabbit
+# LazyRabbit for RabbitMQ
 An stupidly easy wrapper over the Pika amqp package for RabbitMQ for the lazy python dev.
+
+pika-amqp : https://github.com/pika/pika
 
 ## Send a message 
 
