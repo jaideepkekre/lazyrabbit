@@ -4,8 +4,7 @@ jaideep@capiot.com
 """
 import json
 import logging
-import types
-
+import time
 import pika
 
 
@@ -17,28 +16,34 @@ class EasyMQ(object):
                  exchange_type='direct',
                  log_level='INFO',
                  send=True,
-                 get=True):
-
+                 get=True,
+                 getter_wait=0.1,
+                 getter_wait_long=10):
+        self.CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(ip))
         self.QUEUE = queue
         self.EXCHANGE = exchange
         self.IP = ip
         self.EXCHANGE_TYPE = exchange_type
         self.log_level = log_level
+        self.greedy = 1
         if send:
             self.SEND_CHANNEL = self._setup_connection()
             self.SEND_CHANNEL.confirm_delivery()
         if get:
             self.GET_CHANNEL, _ = self._create_default_channel()
+            self.GETTER_WAIT = getter_wait
+            self.GETTER_WAIT_LONG = getter_wait_long
 
     def _create_default_channel(self):
         """
         creates a channel and a declares a queue
         """
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(self.IP))
-        channel = connection.channel()
+
+        channel = self.CONNECTION.channel()
         # declare queue
         result = channel.queue_declare(queue=self.QUEUE)
+        self.created_queue = result
         return channel, result
 
     def _setup_connection(self):
@@ -58,6 +63,24 @@ class EasyMQ(object):
         channel.queue_bind(exchange=self.EXCHANGE, queue=queue_name)
         return channel
 
+    def __actually_get(self):
+        # print (self.greedy)
+        method_frame, header_frame, body = self.GET_CHANNEL.basic_get(
+            self.QUEUE)
+
+        if not body:
+            return None
+        response = dict()
+
+        if header_frame.headers:
+            response["headers"] = json.loads(header_frame.headers)
+        else:
+            response["headers"] = None
+
+        response["body"] = json.loads(body)
+        self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
+        return response
+
     def _GETMSG(self):
         """
         GETS A MESSAGE FROM QUEUE IN DICT FORM
@@ -73,13 +96,16 @@ class EasyMQ(object):
             logger.error("QUEUE cannot be None if in get mode")
             raise ValueError
 
-        method_frame, header_frame, body = self.GET_CHANNEL.basic_get(
-            self.QUEUE)
-        if method_frame:
-            self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
+        response = self.__actually_get()
+        if response:
+            self.greedy = 0
+            return self.__actually_get()
         else:
-            return None
-        return json.loads(body)
+            self.greedy += 1
+            if self.greedy > 1000:
+                time.sleep(self.GETTER_WAIT_LONG)
+            time.sleep(self.GETTER_WAIT)
+            return response
 
     def _ADDMSG(self, MESSAGE_DICT):
         """
@@ -122,8 +148,10 @@ class EasyMQ(object):
         try:
             if MESSAGE_DICT is not None:
                 self._ADDMSG(MESSAGE_DICT)
+                logger.info("Sending message: " + str(MESSAGE_DICT))
             else:
                 return self._GETMSG()
+                logger.info("Attempting to get message")
 
         except Exception:
             raise
@@ -136,7 +164,7 @@ def tester():
     mq = EasyMQ("testq1", "testex1")
     while True:
         mq.ADD_OR_GET(val)
-        #print (mq.ADD_OR_GET())
+        print (mq.ADD_OR_GET())
 
 
 if __name__ == '__main__':
