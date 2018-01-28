@@ -9,6 +9,10 @@ import pika
 
 
 class EasyMQ(object):
+    """
+    Creates an EasyMQ object with setter / getter connections.
+    refer to readme for configuration args. 
+    """
     def __init__(self,
                  queue,
                  exchange='',
@@ -40,10 +44,7 @@ class EasyMQ(object):
             self.GETTER_WAIT_LONG = getter_wait_long
 
     def _create_default_channel(self, connection):
-        """
-        creates a channel and a declares a queue
-        """
-
+        """Create a channel and a declare a queue."""
         channel = connection.channel()
         # declare queue
         result = channel.queue_declare(queue=self.QUEUE)
@@ -51,10 +52,7 @@ class EasyMQ(object):
         return channel, result
 
     def _setup_connection(self, connection):
-        """
-        create a new connection
-        """
-
+        """ Create a new connection."""
         channel, result = self._create_default_channel(connection)
         if self.EXCHANGE is '':
             return channel
@@ -85,7 +83,7 @@ class EasyMQ(object):
         self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
         return response
 
-    def _GETMSG(self):
+    def _getmsg(self):
         """
         GETS A MESSAGE FROM QUEUE IN DICT FORM
         """
@@ -111,35 +109,35 @@ class EasyMQ(object):
             time.sleep(self.GETTER_WAIT)
             return response
 
-    def _ADDMSG(self, MESSAGE_DICT):
+    def _addmsg(self, message_dict):
         """
         ADD MESSAGE TO SEND CHANNEL IN JSON FORMAT
         """
         logging.basicConfig(level=self.log_level)
         logger = logging.getLogger("_ADDMSG")
 
-        if not type(MESSAGE_DICT) == type(dict()):
-            logger.error("MESSAGE_DICT should be of type dict not :" +
-                         str(type(MESSAGE_DICT)))
+        if not type(message_dict) == type(dict()):
+            logger.error("message_dict should be of type dict not :" +
+                         str(type(message_dict)))
             raise TypeError
 
-        if len(MESSAGE_DICT) is 0:
-            logger.error("MESSAGE_DICT cannot be empty if in send mode")
+        if len(message_dict) is 0:
+            logger.error("message_dict cannot be empty if in send mode")
             raise ValueError
 
-        if MESSAGE_DICT is None:
-            logger.error("MESSAGE_DICT cannot be None if in send mode")
+        if message_dict is None:
+            logger.error("message_dict cannot be None if in send mode")
             raise ValueError
 
         self.SEND_CHANNEL.publish(
             exchange=self.EXCHANGE,
             routing_key=self.QUEUE,
-            body=json.dumps(MESSAGE_DICT),
+            body=json.dumps(message_dict),
             mandatory=True)
 
         return True
 
-    def ADD_OR_GET(self, MESSAGE_DICT=None):
+    def add_or_get(self, message_dict=None):
         """
         SEND/GET MESSAGE TO/FROM A EXCHANGE/QUEUE VIA CHANNEL, 
         IF IN SEND , ONLY DICTS ACCEPTED,
@@ -150,13 +148,12 @@ class EasyMQ(object):
         logger = logging.getLogger("send_message")
 
         try:
-            if MESSAGE_DICT is not None:
-                self._ADDMSG(MESSAGE_DICT)
-                logger.info("Sending message: " + str(MESSAGE_DICT))
+            if message_dict is not None:
+                self._addmsg(message_dict)
+                logger.info("Sending message: " + str(message_dict))
             else:
-                return self._GETMSG()
+                return self._getmsg()
                 logger.info("Attempting to get message")
-
         except Exception:
             raise
 
@@ -167,8 +164,8 @@ def tester():
     val["test"] = "value"
     mq = EasyMQ("testq1", "testex1")
     while True:
-        mq.ADD_OR_GET(val)
-        print (mq.ADD_OR_GET())
+        mq.add_or_get()(val)
+        print (mq.add_or_get()())
 
 
 if __name__ == '__main__':
