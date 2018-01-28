@@ -15,7 +15,7 @@ class LazyRabbit(object):
     """
     def __init__(self,
                  queue,
-                 exchange='',
+                 exchange='LazyRabbit',
                  ip='localhost',
                  exchange_type='direct',
                  log_level='INFO',
@@ -162,10 +162,10 @@ def tester():
 
     val = dict()
     val["test"] = "value"
-    mq = LazyRabbit("testq1", "testex1")
+    mq = LazyRabbit("Queue-1")
     while True:
-        mq.add_or_get()(val)
-        print (mq.add_or_get()())
+        mq.add_or_get(val)
+        print (mq.add_or_get())
 
 
 if __name__ == '__main__':
