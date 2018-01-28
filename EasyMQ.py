@@ -19,8 +19,7 @@ class EasyMQ(object):
                  get=True,
                  getter_wait=0.1,
                  getter_wait_long=10):
-        self.CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters(ip))
+
         self.QUEUE = queue
         self.EXCHANGE = exchange
         self.IP = ip
@@ -28,30 +27,35 @@ class EasyMQ(object):
         self.log_level = log_level
         self.greedy = 1
         if send:
-            self.SEND_CHANNEL = self._setup_connection()
+            self.SEND_CONNECTION = pika.BlockingConnection(
+                pika.ConnectionParameters(ip))
+            self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
             self.SEND_CHANNEL.confirm_delivery()
         if get:
-            self.GET_CHANNEL, _ = self._create_default_channel()
+            self.GET_CONNECTION = pika.BlockingConnection(
+                pika.ConnectionParameters(ip))
+            self.GET_CHANNEL, _ = self._create_default_channel(
+                self.GET_CONNECTION)
             self.GETTER_WAIT = getter_wait
             self.GETTER_WAIT_LONG = getter_wait_long
 
-    def _create_default_channel(self):
+    def _create_default_channel(self, connection):
         """
         creates a channel and a declares a queue
         """
 
-        channel = self.CONNECTION.channel()
+        channel = connection.channel()
         # declare queue
         result = channel.queue_declare(queue=self.QUEUE)
         self.created_queue = result
         return channel, result
 
-    def _setup_connection(self):
+    def _setup_connection(self, connection):
         """
         create a new connection
         """
 
-        channel, result = self._create_default_channel()
+        channel, result = self._create_default_channel(connection)
         if self.EXCHANGE is '':
             return channel
 
