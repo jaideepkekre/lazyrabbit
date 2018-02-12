@@ -13,6 +13,7 @@ class LazyRabbit(object):
     Creates an EasyMQ object with setter / getter connections.
     refer to readme for configuration args. 
     """
+
     def __init__(self,
                  queue,
                  exchange='LazyRabbit',
@@ -67,20 +68,23 @@ class LazyRabbit(object):
 
     def __actually_get(self):
         # print (self.greedy)
+
         method_frame, header_frame, body = self.GET_CHANNEL.basic_get(
             self.QUEUE)
 
-        if not body:
+        if body is None:
             return None
-        response = dict()
 
+        response = json.loads(body)
         if header_frame.headers:
             response["headers"] = json.loads(header_frame.headers)
         else:
             response["headers"] = None
 
-        response["body"] = json.loads(body)
-        self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
+
+
+        if method_frame is not None:
+            self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
         return response
 
     def _getmsg(self):
@@ -98,7 +102,7 @@ class LazyRabbit(object):
             logger.error("QUEUE cannot be None if in get mode")
             raise ValueError
 
-        response = self.__actually_get()
+        return  self.__actually_get()
         if response:
             self.greedy = 0
             return self.__actually_get()
@@ -162,10 +166,22 @@ def tester():
 
     val = dict()
     val["test"] = "value"
-    mq = LazyRabbit("Queue-1")
+    mq = LazyRabbit("Queue-1", send=False)
+    # i = 0
     while True:
-        mq.add_or_get(val)
-        print (mq.add_or_get())
+        res=mq.add_or_get()
+        # i = i+1
+        # if i >= 10 :
+        #     break
+
+        if res is not None :
+            print res
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
