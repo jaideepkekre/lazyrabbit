@@ -31,18 +31,13 @@ class LazyRabbit(object):
         self.EXCHANGE_TYPE = exchange_type
         self.log_level = log_level
         self.greedy = 1
+
         if send:
-            self.SEND_CONNECTION = pika.BlockingConnection(
-                pika.ConnectionParameters(ip))
-            self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
-            self.SEND_CHANNEL.confirm_delivery()
+            self._setup_add_connection()
         if get:
-            self.GET_CONNECTION = pika.BlockingConnection(
-                pika.ConnectionParameters(ip))
-            self.GET_CHANNEL, _ = self._create_default_channel(
-                self.GET_CONNECTION)
             self.GETTER_WAIT = getter_wait
             self.GETTER_WAIT_LONG = getter_wait_long
+            self._setup_get_connection()
 
     def _create_default_channel(self, connection):
         """Create a channel and a declare a queue."""
@@ -52,8 +47,22 @@ class LazyRabbit(object):
         self.created_queue = result
         return channel, result
 
+    def _setup_add_connection(self):
+        """Initaialize Send Channel , Connection"""
+        self.SEND_CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(self.IP))
+        self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
+        self.SEND_CHANNEL.confirm_delivery()
+
+    def _setup_get_connection(self):
+        """Initaialize get Channel , Connection"""
+        self.GET_CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(ip))
+        self.GET_CHANNEL, _ = self._create_default_channel(self.GET_CONNECTION)
+       
+
     def _setup_connection(self, connection):
-        """ Create a new connection."""
+        """ Create a new connection and return channel"""
         channel, result = self._create_default_channel(connection)
         if self.EXCHANGE is '':
             return channel
