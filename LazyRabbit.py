@@ -33,11 +33,14 @@ class LazyRabbit(object):
         self.greedy = 1
 
         if send:
-            self._setup_add_connection()
+            self.SEND_CHANNEL = self._setup_send_connection(ip)
         if get:
             self.GETTER_WAIT = getter_wait
             self.GETTER_WAIT_LONG = getter_wait_long
-            self._setup_get_connection()
+            self.GET_CHANNEL = self._setup_get_connection(ip)
+######################################################
+#             Connection creation logic              #
+######################################################
 
     def _create_default_channel(self, connection):
         """Create a channel and a declare a queue."""
@@ -47,19 +50,19 @@ class LazyRabbit(object):
         self.created_queue = result
         return channel, result
 
-    def _setup_add_connection(self):
+    def _setup_send_connection(self, IP):
         """Initaialize Send Channel , Connection"""
-        self.SEND_CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters(self.IP))
-        self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
-        self.SEND_CHANNEL.confirm_delivery()
+        SEND_CONNECTION = pika.BlockingConnection(
+            pika.ConnectionParameters(IP))
+        SEND_CHANNEL = self._setup_connection(SEND_CONNECTION)
+        SEND_CHANNEL.confirm_delivery()
+        return SEND_CHANNEL
 
-    def _setup_get_connection(self):
+    def _setup_get_connection(self, IP):
         """Initaialize get Channel , Connection"""
-        self.GET_CONNECTION = pika.BlockingConnection(
-            pika.ConnectionParameters(ip))
-        self.GET_CHANNEL, _ = self._create_default_channel(self.GET_CONNECTION)
-       
+        GET_CONNECTION = pika.BlockingConnection(pika.ConnectionParameters(IP))
+        GET_CHANNEL, _ = self._create_default_channel(GET_CONNECTION)
+        return GET_CHANNEL
 
     def _setup_connection(self, connection):
         """ Create a new connection and return channel"""
@@ -74,6 +77,11 @@ class LazyRabbit(object):
         # bind queue to exchange
         channel.queue_bind(exchange=self.EXCHANGE, queue=queue_name)
         return channel
+
+
+######################################################
+#             ACTUAL SEND / GET LOGIC                #
+######################################################
 
     def __actually_get(self):
         # print (self.greedy)
@@ -146,10 +154,7 @@ class LazyRabbit(object):
                 body=json.dumps(message_dict),
                 mandatory=True)
         except pika.exceptions.ConnectionClosed:
-            self.SEND_CONNECTION = pika.BlockingConnection(
-                pika.ConnectionParameters(self.IP))
-            self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
-            self.SEND_CHANNEL.confirm_delivery()
+            self.SEND_CHANNEL = self._setup_get_connection(self.IP)
 
         return True
 
@@ -178,10 +183,9 @@ def tester():
 
     val = dict()
     val["test"] = "value"
-    mq = LazyRabbit("Queue-1", get=False)
+    mq = LazyRabbit("Queue-1", send=False)
     while True:
-        res = mq.add_or_get(val)
-        time.sleep(100)
+        print mq.add_or_get()
 
 
 if __name__ == '__main__':
