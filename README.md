@@ -11,7 +11,11 @@ val["test"] = "value"
 mq = LazyRabbit("testq1")
 mq.ADD_OR_GET(val)
 # Only dict input allowed
-```    
+```
+
+This library also now auto recovers connections if the main thread is busy,
+and cannot communicate with MQ broker to establish heartbeat.This is observed with long 
+running tasks that output to a queue.
 
 
 
