@@ -81,8 +81,6 @@ class LazyRabbit(object):
         else:
             response["headers"] = None
 
-
-
         if method_frame is not None:
             self.GET_CHANNEL.basic_ack(method_frame.delivery_tag)
         return response
@@ -102,7 +100,7 @@ class LazyRabbit(object):
             logger.error("QUEUE cannot be None if in get mode")
             raise ValueError
 
-        return  self.__actually_get()
+        return self.__actually_get()
         if response:
             self.greedy = 0
             return self.__actually_get()
@@ -132,12 +130,17 @@ class LazyRabbit(object):
         if message_dict is None:
             logger.error("message_dict cannot be None if in send mode")
             raise ValueError
-
-        self.SEND_CHANNEL.publish(
-            exchange=self.EXCHANGE,
-            routing_key=self.QUEUE,
-            body=json.dumps(message_dict),
-            mandatory=True)
+        try:
+            self.SEND_CHANNEL.publish(
+                exchange=self.EXCHANGE,
+                routing_key=self.QUEUE,
+                body=json.dumps(message_dict),
+                mandatory=True)
+        except pika.exceptions.ConnectionClosed:
+            self.SEND_CONNECTION = pika.BlockingConnection(
+                pika.ConnectionParameters(self.IP))
+            self.SEND_CHANNEL = self._setup_connection(self.SEND_CONNECTION)
+            self.SEND_CHANNEL.confirm_delivery()
 
         return True
 
@@ -166,22 +169,10 @@ def tester():
 
     val = dict()
     val["test"] = "value"
-    mq = LazyRabbit("Queue-1", send=False)
-    # i = 0
+    mq = LazyRabbit("Queue-1", get=False)
     while True:
-        res=mq.add_or_get()
-        # i = i+1
-        # if i >= 10 :
-        #     break
-
-        if res is not None :
-            print res
-
-
-
-
-
-
+        res = mq.add_or_get(val)
+        time.sleep(100)
 
 
 if __name__ == '__main__':
