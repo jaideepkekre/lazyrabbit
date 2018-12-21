@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-jaideep@capiot.com
+jaideepkekre@gmail.com.com
 """
 import json
 import logging
@@ -117,10 +117,10 @@ class LazyRabbit(object):
             logger.error("QUEUE cannot be None if in get mode")
             raise ValueError
 
-        return self.__actually_get()
+        response = self.__actually_get()
         if response:
             self.greedy = 0
-            return self.__actually_get()
+            return response
         else:
             self.greedy += 1
             if self.greedy > 1000:
@@ -183,9 +183,12 @@ def tester():
 
     val = dict()
     val["test"] = "value"
-    mq = LazyRabbit("Queue-1", send=False)
+    mq = LazyRabbit("Queue-1")
+    import uuid
     while True:
-        print mq.add_or_get()
+        val["test"] = str(uuid.uuid4())
+        mq.add_or_get(val)
+        print (mq.add_or_get())
 
 
 if __name__ == '__main__':
